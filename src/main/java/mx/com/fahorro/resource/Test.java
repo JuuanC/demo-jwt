@@ -38,6 +38,7 @@ public class Test {
         return Jwt.issuer("https://example.com/issuer")
                 .upn("jdoe@quarkus.io")
                 .groups(new HashSet<>(Arrays.asList("User", "Admin")))
+                .claim(Claims.azp, "4ef4325e")
                 .claim(Claims.birthdate.name(), "2001-07-13")
                 .expiresAt(Date.from(ZonedDateTime.now().plusSeconds(tokenExpires).toInstant()).toInstant())
                 .sign();
