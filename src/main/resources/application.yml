@@ -1,0 +1,15 @@
+quarkus:
+  smallrye-jwt:
+    enabled: true
+    time-to-live: 28800
+mp:
+  jwt:
+    verify:
+      publickey:
+        location: publicKey.pem
+
+smallrye:
+  jwt:
+    sign:
+      key:
+        location: privateKey.pem

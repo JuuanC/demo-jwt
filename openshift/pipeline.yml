@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: $DEPLOYMENT_NAME
+  namespace: $NAMESPACE
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: $DEPLOYMENT_NAME
+  template:
+    metadata:
+      labels:
+        app: $DEPLOYMENT_NAME
+    spec:
+      containers:
+      - name: $DEPLOYMENT_NAME
+        image: $IMAGE_NAME:$GIT_REF
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: $CONFIGMAP_NAME
+        - secretRef:
+            name: $SECRET_NAME
