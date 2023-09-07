@@ -67,12 +67,12 @@ public class Test {
 
             // Compara la fecha de expiración con la hora actual
             if (exp.before(new Date())) {
-                log.info("No se valido correctamente el token");
+                log.error("Token expirado");
                 // Si el token ha expirado, retorna un 401
                 return Response.status(Response.Status.UNAUTHORIZED).entity("Token expirado").build();
             }
         } catch (Exception e) {
-            log.info("No se valido correctamente el token");
+            log.error("No se pudo verificar la expiración del token");
             // Si no podemos obtener el claim de expiración por alguna razón, también retornamos un 401
             return Response.status(Response.Status.UNAUTHORIZED).entity("No se pudo verificar la expiración del token").build();
         }
