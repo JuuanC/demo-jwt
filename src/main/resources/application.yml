@@ -1,7 +1,7 @@
 quarkus:
   smallrye-jwt:
     enabled: true
-    time-to-live: 28800
+    time-to-live: 5
 mp:
   jwt:
     verify:
@@ -13,3 +13,6 @@ smallrye:
     sign:
       key:
         location: privateKey.pem
+
+token:
+  expires: 30

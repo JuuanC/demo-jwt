@@ -4,16 +4,18 @@ import io.smallrye.jwt.build.Jwt;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.InternalServerErrorException;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 
 @Path("")
@@ -23,14 +25,18 @@ public class Test {
     @Inject
     JsonWebToken jwt;
 
+    @ConfigProperty(name = "token.expires")
+    int tokenExpires;
+
     @GET
     @Path("/generar")
     public String generar(){
         return Jwt.issuer("https://example.com/issuer")
-                        .upn("jdoe@quarkus.io")
-                        .groups(new HashSet<>(Arrays.asList("User", "Admin")))
-                        .claim(Claims.birthdate.name(), "2001-07-13")
-                        .sign();
+                .upn("jdoe@quarkus.io")
+                .groups(new HashSet<>(Arrays.asList("User", "Admin")))
+                .claim(Claims.birthdate.name(), "2001-07-13")
+                .expiresAt(Date.from(ZonedDateTime.now().plusSeconds(tokenExpires).toInstant()).toInstant())
+                .sign();
     }
 
 
@@ -43,28 +49,28 @@ public class Test {
 
     @GET
     @Path("/validar")
-    @RolesAllowed({ "User", "Admin" })
-    public String validar(@Context SecurityContext ctx) {
-        return getResponseString(ctx) + ", birthdate: " + jwt.getClaim("birthdate").toString();
-    }
-
-    private String getResponseString(SecurityContext ctx) {
-        String name;
+    public Response validar(@Context SecurityContext ctx) {
         if (ctx.getUserPrincipal() == null) {
-            name = "anonymous";
-        } else if (!ctx.getUserPrincipal().getName().equals(jwt.getName())) {
-            throw new InternalServerErrorException("Principal and JsonWebToken names do not match");
-        } else {
-            name = ctx.getUserPrincipal().getName();
+            return Response.status(Response.Status.UNAUTHORIZED).entity("Token no proporcionado o inválido").build();
         }
-        return String.format("hello + %s,"
-                        + " isHttps: %s,"
-                        + " authScheme: %s,"
-                        + " hasJWT: %s",
-                name, ctx.isSecure(), ctx.getAuthenticationScheme(), hasJwt());
+
+        try {
+            // Obtén el claim de expiración del token
+            Long expEpoch = jwt.getClaim(Claims.exp.name());
+            Date exp = new Date(expEpoch * 1000); // Convertir segundos a milisegundos
+
+            // Compara la fecha de expiración con la hora actual
+            if (exp.before(new Date())) {
+                // Si el token ha expirado, retorna un 401
+                return Response.status(Response.Status.UNAUTHORIZED).entity("Token expirado").build();
+            }
+        } catch (Exception e) {
+            // Si no podemos obtener el claim de expiración por alguna razón, también retornamos un 401
+            return Response.status(Response.Status.UNAUTHORIZED).entity("No se pudo verificar la expiración del token").build();
+        }
+
+        // Si todas las validaciones pasan
+        return Response.status(Response.Status.OK).entity("Token válido").build();
     }
 
-    private boolean hasJwt() {
-        return jwt.getClaimNames() != null;
-    }
 }
