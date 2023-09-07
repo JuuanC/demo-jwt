@@ -13,6 +13,9 @@ import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Date;
@@ -21,6 +24,7 @@ import java.util.HashSet;
 @Path("")
 @Produces({MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
 public class Test {
+    private static final Logger log = LoggerFactory.getLogger(Test.class);
 
     @Inject
     JsonWebToken jwt;
@@ -50,6 +54,8 @@ public class Test {
     @GET
     @Path("/validar")
     public Response validar(@Context SecurityContext ctx) {
+
+        log.info("Se procede a validar el token");
         if (ctx.getUserPrincipal() == null) {
             return Response.status(Response.Status.UNAUTHORIZED).entity("Token no proporcionado o inválido").build();
         }
@@ -61,14 +67,17 @@ public class Test {
 
             // Compara la fecha de expiración con la hora actual
             if (exp.before(new Date())) {
+                log.info("No se valido correctamente el token");
                 // Si el token ha expirado, retorna un 401
                 return Response.status(Response.Status.UNAUTHORIZED).entity("Token expirado").build();
             }
         } catch (Exception e) {
+            log.info("No se valido correctamente el token");
             // Si no podemos obtener el claim de expiración por alguna razón, también retornamos un 401
             return Response.status(Response.Status.UNAUTHORIZED).entity("No se pudo verificar la expiración del token").build();
         }
 
+        log.info("Token válido");
         // Si todas las validaciones pasan
         return Response.status(Response.Status.OK).entity("Token válido").build();
     }
